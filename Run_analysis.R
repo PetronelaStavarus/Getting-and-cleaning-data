@@ -1,86 +1,76 @@
 getwd()
 setwd("C:/Users/tibi/Documents")
-data=download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip",destfile = "quiz1/Dataset.zip",method="curl", mode="wb")
-data4=unzip(zipfile="quiz1/Dataset.zip")
+data=download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip",destfile = "./quiz1/Dataset", mode="wb")
+data4=unzip(zipfile="quiz1/Dataset")
 head(data4)
 list(data4)
 library(dplyr)
 
-# Read in the X test dataset
-x.test <- read.csv("UCI HAR Dataset/test/X_test.txt", sep="",
+# Read in the X, Y,subject test dataset
+xtest <- read.csv("UCI HAR Dataset/test/X_test.txt", sep="",
                    header=FALSE)
-
-# Read in the test labels
-y.test <- read.csv("UCI HAR Dataset/test/y_test.txt", sep="",
+ytest <- read.csv("UCI HAR Dataset/test/y_test.txt", sep="",
                    header=FALSE)
-
-# Rest in the test subject dataset
-subject.test <- read.csv("UCI HAR Dataset/test/subject_test.txt",
+subjecttest <- read.csv("UCI HAR Dataset/test/subject_test.txt",
                          sep="", header=FALSE)
 
 # Merge the test datasets into a single dataframe
-test <- data.frame(subject.test, y.test, x.test)
+test <- data.frame(subjecttest, ytest, xtest)
+head(test)
 
-# Read in the X training dataset
-x.train <- read.csv("UCI HAR Dataset/train/X_train.txt", sep="",
+# Read in the X, Y,subject train dataset
+xtrain <- read.csv("UCI HAR Dataset/train/X_train.txt", sep="",
                     header=FALSE)
-
-# Read in the training labels
-y.train <- read.csv("UCI HAR Dataset/train/y_train.txt", sep="",
+ytrain <- read.csv("UCI HAR Dataset/train/y_train.txt", sep="",
                     header=FALSE)
-
-# Read in the training subject dataset
-subject.train <- read.csv("UCI HAR Dataset/train/subject_train.txt",
+subjecttrain <- read.csv("UCI HAR Dataset/train/subject_train.txt",
                           sep="", header=FALSE)
 
-# Merge test training datasets into a single dataframe
-train <- data.frame(subject.train, y.train, x.train)
+# Merge test training datasets 
+train <- data.frame(subjecttrain, ytrain, xtrain)
 
-# Combine the training and test running datasets
-run.data <- rbind(train, test)
+head(train)
 
-# Remove the files we don't need anymore from
-# the environment.
-remove(subject.test, x.test, y.test, subject.train,
-       x.train, y.train, test, train)
+# Combine the training and test datasets
+mydata <- rbind(train, test)
+head(mydata)
+
 
 # Read in the measurement labels dataset
 features <- read.csv("UCI HAR Dataset/features.txt", sep="", header=FALSE)
-# Convert the 2nd column into a vector
-column.names <- as.vector(features[, 2])
+
+features_id=as.vector(features[,2])
+
 # Apply the measurement labels as column names to the combined
 # running dataset
-colnames(run.data) <- c("subject_id", "activity_labels", column.names)
+colnames(mydata) <- c("subject_id", "activity_labels", features_id)
+head(mydata)
+
 
 # Select only the columns that contain mean or standard deviations.
-# Make sure to bring along the subject and label columns.
-# Exclude columns with freq and angle in the name.
-run.data <- select(run.data, contains("subject"), contains("label"),
-                   contains("mean"), contains("std"), -contains("freq"),
-                   -contains("angle"))
+
+mydata3=select(mydata,contains("subject"), contains("label"),
+               contains("mean"), contains("std"))
+head(mydata3)
 
 # Read in the activity labels dataset
 activity.labels <- read.csv("UCI HAR Dataset/activity_labels.txt", 
                             sep="", header=FALSE)
 
-# Replace the activity codes in the trimmed down running
-# dataset with the labels from the activity labels dataset.
-run.data$activity_labels <- as.character(activity.labels[
-        match(run.data$activity_labels, activity.labels$V1), 'V2'])
+mydata3$activity_labels <- as.character(activity.labels[
+        match(mydata$activity_labels, activity.labels$V1), 'V2'])
 
-# Clean up the column names. Remove parantheses and hyphens
-# from column names, both of which are invalid characters in
-# column names. Also fix a set of columns that repeat the
-# word "Body".
-setnames(run.data, colnames(run.data), gsub("\\(\\)", "", colnames(run.data)))
-setnames(run.data, colnames(run.data), gsub("-", "_", colnames(run.data)))
-setnames(run.data, colnames(run.data), gsub("BodyBody", "Body", colnames(run.data)))
+# Clean up the data
 
-# Group the running data by subject and activity, then
-# calculate the mean of every measurement.
-run.data.summary <- run.data %>%
+gsub("\\(\\)", "", colnames(mydata3))
+gsub("-", "_", colnames(mydata2))
+gsub("BodyBody", "Body", colnames(mydata2))
+
+
+# Calculte the mean
+mydata3.summary <- mydata3 %>%
         group_by(subject_id, activity_labels) %>%
         summarise_each(funs(mean))
 
 # Write run.data to file
-write.table(run.data.summary, file="run_data_summary.txt", row.name=FALSE)
+write.table(mydata3.summary, file="mydata3.summary.txt", row.name=FALSE)
